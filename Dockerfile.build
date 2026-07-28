@@ -27,6 +27,7 @@ RUN pacman -Syu --noconfirm && \
         libxcursor libpulse libxcb libxtst xcb-util xcb-util-wm \
         xcb-util-keysyms xcb-util-image xcb-util-cursor \
         xorg-server-devel xf86-input-libinput xf86-input-synaptics \
+        vulkan-headers shaderc \
         archiso arch-install-scripts \
         openssh rsync && \
     pacman -Scc --noconfirm
@@ -38,88 +39,82 @@ COPY . /build/MatsyaOS
 RUN sed -i '/class QStringList;/d' /build/MatsyaOS/libmatsya/mpris/mprisplayer_p.h
 
 # Build script
-RUN echo '#!/bin/bash
-set -e
-cd /build/MatsyaOS
-
-REPO_DIR="/build/repo/x86_64"
-mkdir -p "$REPO_DIR"
-
-build_lib() {
-    local name="$1"
-    local dir="$2"
-    echo "==> Building $name..."
-    local bdir="/tmp/build-$name"
-    rm -rf "$bdir"
-    mkdir -p "$bdir"
-    cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -B "$bdir" -S "$dir"
-    cmake --build "$bdir" -j$(nproc)
-    DESTDIR="/tmp/pkg-$name" cmake --install "$bdir"
-    cd "/tmp/pkg-$name"
-    # Create .PKGINFO
-    size=$(find . -type f -exec stat -c%s {} + | awk '{s+=$1} END {print s+0}')
-    cat > .PKGINFO << EOF
-pkgname = $name
-pkgver = 1.0-1
-pkgdesc = $name package from MatsyaOS
-arch = x86_64
-builddate = $(date +%s)
-size = $size
-EOF
-    tar --zstd -cf "$REPO_DIR/$name-1.0-1-x86_64.pkg.tar.zst" .
-    rm -rf "$bdir" "/tmp/pkg-$name"
-    echo "==> $name done"
-}
-
-echo "=== Building MatsyaOS packages ==="
-# Foundation
-build_lib "libmatsya" "/build/MatsyaOS/libmatsya"
-build_lib "matsyaui" "/build/MatsyaOS/matsyaui"
-# Core
-build_lib "matsya-daemon" "/build/MatsyaOS/daemon"
-build_lib "matsya-core" "/build/MatsyaOS/core"
-build_lib "matsya-kwin-plugins" "/build/MatsyaOS/kwin-plugins"
-build_lib "matsya-screenlocker" "/build/MatsyaOS/screenlocker"
-# Apps
-build_lib "matsya-launcher" "/build/MatsyaOS/launcher"
-build_lib "matsya-dock" "/build/MatsyaOS/dock"
-build_lib "matsya-statusbar" "/build/MatsyaOS/statusbar"
-build_lib "matsya-appmotor" "/build/MatsyaOS/appmotor"
-build_lib "matsya-calculator" "/build/MatsyaOS/calculator"
-build_lib "matsya-terminal" "/build/MatsyaOS/terminal"
-build_lib "matsya-texteditor" "/build/MatsyaOS/texteditor"
-build_lib "matsya-filemanager" "/build/MatsyaOS/filemanager"
-build_lib "matsya-screenshot" "/build/MatsyaOS/screenshot"
-build_lib "matsya-debinstaller" "/build/MatsyaOS/debinstaller"
-build_lib "matsya-settings" "/build/MatsyaOS/matsya-settings"
-build_lib "matsya-updater" "/build/MatsyaOS/matsya-updater"
-build_lib "matsya-qt-plugins" "/build/MatsyaOS/qt-plugins"
-build_lib "matsya-sddm-theme" "/build/MatsyaOS/sddm-theme"
-
-# Asset packages
-for asset in icons gtk-themes wallpappers; do
-    echo "==> Packaging matsya-$asset..."
-    dst="/tmp/pkg-$asset/usr/share"
-    mkdir -p "$dst"
-    cp -r "/build/MatsyaOS/$asset"/* "$dst/" 2>/dev/null || true
-    cd "/tmp/pkg-$asset"
-    size=$(find . -type f -exec stat -c%s {} + | awk '{s+=$1} END {print s+0}')
-    cat > .PKGINFO << EOF
-pkgname = matsya-$asset
-pkgver = 1.0-1
-pkgdesc = MatsyaOS $asset package
-arch = x86_64
-builddate = $(date +%s)
-size = $size
-EOF
-    tar --zstd -cf "$REPO_DIR/matsya-$asset-1.0-1-x86_64.pkg.tar.zst" .
-    rm -rf "/tmp/pkg-$asset"
-done
-
-# Create repo database
-cd "$REPO_DIR"
-repo-add matsyaos.db.tar.gz *.pkg.tar.zst
-echo "=== All packages built! ==="
+RUN printf '#!/bin/bash\n\
+set -e\n\
+cd /build/MatsyaOS\n\
+\n\
+REPO_DIR="/build/repo/x86_64"\n\
+mkdir -p "$REPO_DIR"\n\
+\n\
+build_lib() {\n\
+    local name="$1"\n\
+    local dir="$2"\n\
+    echo "==> Building $name..."\n\
+    local bdir="/tmp/build-$name"\n\
+    rm -rf "$bdir"\n\
+    mkdir -p "$bdir"\n\
+    cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -B "$bdir" -S "$dir"\n\
+    cmake --build "$bdir" -j$(nproc)\n\
+    DESTDIR="/tmp/pkg-$name" cmake --install "$bdir"\n\
+    cd "/tmp/pkg-$name"\n\
+    size=$(find . -type f -exec stat -c%%s {} + | awk "{s+=$1} END {print s+0}")\n\
+    cat > .PKGINFO << EOF\n\
+pkgname = $name\n\
+pkgver = 1.0-1\n\
+pkgdesc = $name package from MatsyaOS\n\
+arch = x86_64\n\
+builddate = $(date +%%s)\n\
+size = $size\n\
+EOF\n\
+    tar --zstd -cf "$REPO_DIR/$name-1.0-1-x86_64.pkg.tar.zst" .\n\
+    rm -rf "$bdir" "/tmp/pkg-$name"\n\
+    echo "==> $name done"\n\
+}\n\
+\n\
+echo "=== Building MatsyaOS packages ==="\n\
+build_lib "libmatsya" "/build/MatsyaOS/libmatsya"\n\
+build_lib "matsyaui" "/build/MatsyaOS/matsyaui"\n\
+build_lib "matsya-daemon" "/build/MatsyaOS/daemon"\n\
+build_lib "matsya-core" "/build/MatsyaOS/core"\n\
+build_lib "matsya-kwin-plugins" "/build/MatsyaOS/kwin-plugins"\n\
+build_lib "matsya-screenlocker" "/build/MatsyaOS/screenlocker"\n\
+build_lib "matsya-launcher" "/build/MatsyaOS/launcher"\n\
+build_lib "matsya-dock" "/build/MatsyaOS/dock"\n\
+build_lib "matsya-statusbar" "/build/MatsyaOS/statusbar"\n\
+build_lib "matsya-appmotor" "/build/MatsyaOS/appmotor"\n\
+build_lib "matsya-calculator" "/build/MatsyaOS/calculator"\n\
+build_lib "matsya-terminal" "/build/MatsyaOS/terminal"\n\
+build_lib "matsya-texteditor" "/build/MatsyaOS/texteditor"\n\
+build_lib "matsya-filemanager" "/build/MatsyaOS/filemanager"\n\
+build_lib "matsya-screenshot" "/build/MatsyaOS/screenshot"\n\
+build_lib "matsya-debinstaller" "/build/MatsyaOS/debinstaller"\n\
+build_lib "matsya-settings" "/build/MatsyaOS/matsya-settings"\n\
+build_lib "matsya-updater" "/build/MatsyaOS/matsya-updater"\n\
+build_lib "matsya-qt-plugins" "/build/MatsyaOS/qt-plugins"\n\
+build_lib "matsya-sddm-theme" "/build/MatsyaOS/sddm-theme"\n\
+\n\
+for asset in icons gtk-themes wallpappers; do\n\
+    echo "==> Packaging matsya-$asset..."\n\
+    dst="/tmp/pkg-$asset/usr/share"\n\
+    mkdir -p "$dst"\n\
+    cp -r "/build/MatsyaOS/$asset"/* "$dst/" 2>/dev/null || true\n\
+    cd "/tmp/pkg-$asset"\n\
+    size=$(find . -type f -exec stat -c%%s {} + | awk "{s+=$1} END {print s+0}")\n\
+    cat > .PKGINFO << EOF\n\
+pkgname = matsya-$asset\n\
+pkgver = 1.0-1\n\
+pkgdesc = MatsyaOS $asset package\n\
+arch = x86_64\n\
+builddate = $(date +%%s)\n\
+size = $size\n\
+EOF\n\
+    tar --zstd -cf "$REPO_DIR/matsya-$asset-1.0-1-x86_64.pkg.tar.zst" .\n\
+    rm -rf "/tmp/pkg-$asset"\n\
+done\n\
+\n\
+cd "$REPO_DIR"\n\
+repo-add matsyaos.db.tar.gz *.pkg.tar.zst\n\
+echo "=== All packages built! ==="\n\
 ' > /build/build-all.sh && chmod +x /build/build-all.sh
 
 CMD ["/build/build-all.sh"]

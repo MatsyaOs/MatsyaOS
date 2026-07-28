@@ -321,24 +321,26 @@ kf6-solid
 accountsservice
 kf6-screen
 # Required
-core 
 libmatsya 
 matsya-appmotor 
-matsya-calamares-config 
 matsya-calculator 
+matsya-core
+matsya-daemon
 matsya-dock 
 matsya-filemanager 
 matsya-gtk-themes 
+matsya-icons
 matsya-launcher 
-matsya-namaste-git 
+matsya-screenlocker
 matsya-screenshot 
+matsya-sddm-theme
 matsya-settings 
 matsya-statusbar
 matsya-terminal 
 matsya-texteditor 
+matsya-updater
 matsya-wallpappers
 matsyaui 
-qt-plugins 
 matsya-kwin-plugins
 
 
