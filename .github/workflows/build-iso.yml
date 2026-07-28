@@ -36,11 +36,12 @@ jobs:
 
       - name: Build ISO
         run: |
-          PROFILE_DIR=/__w/MatsyaOS/MatsyaOS/matsya-iso/profiles/matsya
-          REPO_DIR=/__w/matsyaos-repo/x86_64
+          ISO_DIR="${GITHUB_WORKSPACE}/MatsyaOS"
+          PROFILE_DIR="${ISO_DIR}/matsya-iso/profiles/matsya"
+          REPO_DIR="$(dirname ${GITHUB_WORKSPACE})/matsyaos-repo/x86_64"
           sed -i "s|file:///home/mister/matsyaos-repo/x86_64/|file://${REPO_DIR}/|g" "${PROFILE_DIR}/pacman.conf"
 
-          cd /__w/MatsyaOS/MatsyaOS/matsya-iso
+          cd "${ISO_DIR}/matsya-iso"
           ./archuseriso/aui-mkiso "${PROFILE_DIR}" /tmp/iso-output
 
       - name: Upload ISO
