@@ -52,6 +52,18 @@ jobs:
 
           cd "${GITHUB_WORKSPACE}/MatsyaOS/matsya-iso"
           rm -rf work out
+
+          # Test the generated pacman.conf and pacman --root directly
+          mkdir -p /tmp/test-pacroot/{dev,proc,sys,run,etc/pacman.d,var/{lib/pacman,cache/pacman/pkg,log}}
+          cp "${PROFILE_DIR}/pacman.conf" /tmp/test-pacroot/etc/pacman.conf
+          if pacman --root=/tmp/test-pacroot --config="${PROFILE_DIR}/pacman.conf" --cachedir=/var/cache/pacman/pkg --noconfirm -Sy base 2>&1; then
+            echo "PACMAN_ROOT_TEST: success"
+          else
+            echo "PACMAN_ROOT_TEST: failed (exit $?)"
+          fi
+          rm -rf /tmp/test-pacroot
+
+          # Now build the ISO
           ./archuseriso/aui-mkiso "${PROFILE_DIR}" /tmp/iso-output 2>&1
 
       - name: Upload ISO
