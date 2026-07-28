@@ -50,17 +50,6 @@ jobs:
 
           sed -i "s|file:///home/mister/matsyaos-repo/x86_64/|file://${REPO_DIR}/|g" "${PROFILE_DIR}/pacman.conf"
 
-          # Install overrides (avoids mount calls that fail in Docker)
-          echo "Real pacstrap: $(command -v pacstrap)"
-          PACSTRAP_PATH="$(command -v pacstrap)"
-          cp "${GITHUB_WORKSPACE}/MatsyaOS/.github/scripts/pacstrap-override" "${PACSTRAP_PATH}"
-          ARCH_CHROOT_PATH="$(command -v arch-chroot)"
-          cp "${GITHUB_WORKSPACE}/MatsyaOS/.github/scripts/arch-chroot-override" "${ARCH_CHROOT_PATH}"
-          echo "Installed: pacstrap=${PACSTRAP_PATH} arch-chroot=${ARCH_CHROOT_PATH}"
-          # Debug: test override directly
-          echo "override-content: $(head -5 ${PACSTRAP_PATH})"
-          env -u TMPDIR pacstrap --help 2>&1 || echo "PACSTRAP_TEST_EXIT: $?"
-
           cd "${GITHUB_WORKSPACE}/MatsyaOS/matsya-iso"
           rm -rf work out
           ./archuseriso/aui-mkiso "${PROFILE_DIR}" /tmp/iso-output 2>&1
