@@ -5,8 +5,8 @@ on:
   push:
     branches: [master]
     paths:
-      - 'profiles/**'
-      - 'archuseriso/**'
+      - 'matsya-iso/profiles/**'
+      - 'matsya-iso/archuseriso/**'
 
 jobs:
   build:
@@ -21,10 +21,12 @@ jobs:
           pacman -Syu --noconfirm
           pacman -S --noconfirm archiso arch-install-scripts grub git wget squashfs-tools libisoburn mtools syslinux
 
-      - name: Checkout matsya-iso
+      - name: Checkout MatsyaOS
         uses: actions/checkout@v4
         with:
-          path: matsya-iso
+          repository: MatsyaOs/MatsyaOS
+          submodules: true
+          path: MatsyaOS
 
       - name: Checkout matsyaos-repo
         uses: actions/checkout@v4
@@ -34,11 +36,12 @@ jobs:
 
       - name: Build ISO
         run: |
+          PROFILE_DIR=/__w/MatsyaOS/MatsyaOS/matsya-iso/profiles/matsya
           REPO_DIR=/__w/matsyaos-repo/x86_64
-          sed -i "s|file:///home/mister/matsyaos-repo/x86_64/|file://${REPO_DIR}/|g" matsya-iso/profiles/matsya/pacman.conf
+          sed -i "s|file:///home/mister/matsyaos-repo/x86_64/|file://${REPO_DIR}/|g" "${PROFILE_DIR}/pacman.conf"
 
-          cd matsya-iso
-          ./archuseriso/aui-mkiso profiles/matsya /tmp/iso-output
+          cd /__w/MatsyaOS/MatsyaOS/matsya-iso
+          ./archuseriso/aui-mkiso "${PROFILE_DIR}" /tmp/iso-output
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
