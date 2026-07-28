@@ -1,0 +1,48 @@
+name: Build MatsyaOS ISO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'profiles/**'
+      - 'archuseriso/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm archiso arch-install-scripts grub git wget squashfs-tools libisoburn mtools syslinux
+
+      - name: Checkout matsya-iso
+        uses: actions/checkout@v4
+        with:
+          path: matsya-iso
+
+      - name: Checkout matsyaos-repo
+        uses: actions/checkout@v4
+        with:
+          repository: MatsyaOs/matsyaos-repo
+          path: matsyaos-repo
+
+      - name: Build ISO
+        run: |
+          REPO_DIR=/__w/matsyaos-repo/x86_64
+          sed -i "s|file:///home/mister/matsyaos-repo/x86_64/|file://${REPO_DIR}/|g" matsya-iso/profiles/matsya/pacman.conf
+
+          cd matsya-iso
+          ./archuseriso/aui-mkiso profiles/matsya /tmp/iso-output
+
+      - name: Upload ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: MatsyaOS-ISO
+          path: /tmp/iso-output/*.iso
+          if-no-files-found: error
