@@ -1,0 +1,35 @@
+name: VanillaOS kinetic
+
+on:
+  push:
+    branches: [ "kinetic" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container:
+      image: debian:bookworm
+      volumes:
+        - /proc:/proc
+        - /:/run/host
+      options: --privileged -it
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: De-bloat stock image
+      run: |
+        rm -r /run/host/usr/share/dotnet
+        rm -r /run/host${{ runner.tool_cache }}
+
+    - name: Install needed packages
+      run: apt update && apt install debootstrap -y
+
+    - name: Build ISO
+      run: ./build.sh etc/terraform.conf
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: VanillaOS 22.10
+        path: builds/

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Exec=/usr/share/matsya/namaste-app/namaste
+Name=Welcome
+Icon=matsya.svg
+GenericName=Namaste-App
+Categories=Utility;GTK;DesktopSettings;
+Comment=Namaste app for MatsyaOs

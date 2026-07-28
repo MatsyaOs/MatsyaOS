@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Author : Ruturajn <nanotiruturaj@gmail.com>
+# adapted for AmOs Linux by amanre <amanre556@gmail.com>
+
+# This script works as the main welcome application for RnOS.
+
+# Define the path to the directory where, this script, and other
+# resources used reside.
+# CONTENT_DIR="${HOME}/test/welcome-app"
+CONTENT_DIR="/usr/share/matsya/namaste-app"
+
+# Change directory to $CONTENT_DIR
+cd "${CONTENT_DIR}"
+
+# Function to remove the Welcome App from Autostart Directory.
+remove_autostart() {
+    pkexec rm /etc/xdg/autostart/namaste.desktop
+    notify-send "Removed Desktop Entry from Autostart Directory"
+}
+
+# Export the function, so `yad`, can call it on button-clicked.
+export -f remove_autostart
+
+# Start `yad`, with html, and a specific geometry. Define buttons, and the
+# actions they perform when clicked.
+yad --html --uri="./namaste.html" --borders=50 --width=950 --height=750 \
+	--button=" Explore!stock_exit":0 \
+	--button=" About!documentinfo":"./about-info/about" \
+	--button=" Launch Calamares!launch":1 \
+	--button=" View Keybindings!khotkeys":"./key_binds/keybinds" \
+    --button=" Remove Autostart!remove":"bash -c remove_autostart" 2> /dev/null \
+     
+# Store the exit code in the variable named `return_val`.
+return_val=$?
+
+# Execute various commands based on EXIT code.
+case "${return_val}" in
+    0) ./wal_test ;;
+    1)
+        echo "Launching Calamares..."
+        /etc/calamares/launch_calamares.sh 
+    ;;
+esac
+
+# Remove the exported function.
+unset remove_autostart

@@ -1,0 +1,69 @@
+[submodule "libmatsya"]
+	path = libmatsya
+	url = https://github.com/MatsyaOs/libmatsya
+[submodule "matsyaui"]
+	path = matsyaui
+	url = https://github.com/MatsyaOs/matsyaui
+[submodule "daemon"]
+	path = daemon
+	url = https://github.com/MatsyaOs/daemon
+[submodule "core"]
+	path = core
+	url = https://github.com/MatsyaOs/core
+[submodule "kwin-plugins"]
+	path = kwin-plugins
+	url = https://github.com/MatsyaOs/kwin-plugins
+[submodule "screenlocker"]
+	path = screenlocker
+	url = https://github.com/MatsyaOs/screenlocker
+[submodule "launcher"]
+	path = launcher
+	url = https://github.com/MatsyaOs/launcher
+[submodule "dock"]
+	path = dock
+	url = https://github.com/MatsyaOs/dock
+[submodule "statusbar"]
+	path = statusbar
+	url = https://github.com/MatsyaOs/statusbar
+[submodule "appmotor"]
+	path = appmotor
+	url = https://github.com/MatsyaOs/appmotor
+[submodule "calculator"]
+	path = calculator
+	url = https://github.com/MatsyaOs/calculator
+[submodule "terminal"]
+	path = terminal
+	url = https://github.com/MatsyaOs/terminal
+[submodule "texteditor"]
+	path = texteditor
+	url = https://github.com/MatsyaOs/texteditor
+[submodule "filemanager"]
+	path = filemanager
+	url = https://github.com/MatsyaOs/filemanager
+[submodule "screenshot"]
+	path = screenshot
+	url = https://github.com/MatsyaOs/screenshot
+[submodule "debinstaller"]
+	path = debinstaller
+	url = https://github.com/MatsyaOs/debinstaller
+[submodule "matsya-settings"]
+	path = matsya-settings
+	url = https://github.com/MatsyaOs/matsya-settings
+[submodule "matsya-updater"]
+	path = matsya-updater
+	url = https://github.com/MatsyaOs/matsya-updater
+[submodule "qt-plugins"]
+	path = qt-plugins
+	url = https://github.com/MatsyaOs/qt-plugins
+[submodule "sddm-theme"]
+	path = sddm-theme
+	url = https://github.com/MatsyaOs/sddm-theme
+[submodule "icons"]
+	path = icons
+	url = https://github.com/MatsyaOs/icons
+[submodule "gtk-themes"]
+	path = gtk-themes
+	url = https://github.com/MatsyaOs/gtk-themes
+[submodule "wallpappers"]
+	path = wallpappers
+	url = https://github.com/MatsyaOs/wallpappers

@@ -1,0 +1,7 @@
+build/
+pkg/
+.cache/
+*.user
+*.pro.user
+CMakeLists.txt.user*
+build-*/

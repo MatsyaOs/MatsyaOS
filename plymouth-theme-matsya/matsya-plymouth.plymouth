@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=matsya-plymouth
+Description=Plymouth Vishnu Theme for Matsya Os
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/matsya-plymouth
+ScriptFile=/usr/share/plymouth/themes/matsya-plymouth/matsya-plymouth.script

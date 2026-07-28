@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Author : Ruturajn <nanotiruturaj@gmail.com>
+
+# This scrpit is run, when the user clicks on the `Explore` button.
+# It runs the `wal-set` script, if the user wishes to.
+
+yad --text "Do you want to checkout the Pywal Script?\n" --borders=20 --width=250 --height=40 \
+    --button=" Sure!dialog-yes":0 \
+    --button=" No!no":1 2> /dev/null
+
+ret_val=$?
+
+# Remove unnecessary stuff from autostart.sh
+AUTOSTART_PATH="/home/$(whoami)/.config/qtile/autostart.sh"
+
+# final_autostart=$(tac "${AUTOSTART_PATH}" | sed 1,2d | tac)
+# echo "${final_autostart}" > "${AUTOSTART_PATH}"
+sed -i '/nitrogen --set-scaled.*/d' "${AUTOSTART_PATH}"
+
+
+case "${ret_val}" in
+    0) 
+        sed -i 's|^nitrogen --restore|# nitrogen --restore\nwal -R|' "${AUTOSTART_PATH}"
+        ~/.config/qtile/Scripts/wal-set
+        ;;
+esac

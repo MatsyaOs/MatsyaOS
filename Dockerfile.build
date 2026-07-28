@@ -1,0 +1,96 @@
+FROM archlinux:latest
+
+# Install build dependencies
+RUN pacman -Syu --noconfirm && \
+    pacman -S --needed --noconfirm \
+        base-devel git cmake extra-cmake-modules ninja pkgconf \
+        qt6-base qt6-declarative qt6-tools qt6-svg qt6-sensors qt6-shadertools \
+        bluez-qt \
+        kconfig kconfigwidgets kcoreaddons kguiaddons kwindowsystem kwayland \
+        kdecoration kio kidletime kdeclarative kwin solid \
+        syntax-highlighting \
+        networkmanager-qt modemmanager-qt \
+        kscreen qqc2-desktop-style taglib \
+        polkit polkit-qt6 \
+        libkscreen libqtxdg libdbusmenu-lxqt \
+        accountsservice \
+        freetype2 fontconfig \
+        libxcursor libpulse libxcb libxtst \
+        xorg-server-devel xf86-input-libinput xf86-input-synaptics \
+        archiso arch-install-scripts \
+        openssh rsync && \
+    pacman -Scc --noconfirm
+
+WORKDIR /build
+COPY . /build/MatsyaOS
+
+# Patch: fix QStringList forward declaration in mpris
+RUN sed -i '/class QStringList;/d' /build/MatsyaOS/libmatsya/mpris/mprisplayer_p.h
+
+# Build script
+RUN echo '#!/bin/bash
+set -e
+cd /build/MatsyaOS
+
+REPO_DIR="/build/repo/x86_64"
+mkdir -p "$REPO_DIR"
+
+build_lib() {
+    local name="$1"
+    local dir="$2"
+    echo "==> Building $name..."
+    local bdir="/tmp/build-$name"
+    rm -rf "$bdir"
+    mkdir -p "$bdir"
+    cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -B "$bdir" -S "$dir"
+    cmake --build "$bdir" -j$(nproc)
+    DESTDIR="/tmp/pkg-$name" cmake --install "$bdir"
+    cd "/tmp/pkg-$name"
+    tar -czf "$REPO_DIR/$name-1.0-1-x86_64.pkg.tar.zst" *
+    rm -rf "$bdir" "/tmp/pkg-$name"
+    echo "==> $name done"
+}
+
+echo "=== Building MatsyaOS packages ==="
+# Foundation
+build_lib "libmatsya" "/build/MatsyaOS/libmatsya"
+build_lib "matsyaui" "/build/MatsyaOS/matsyaui"
+# Core
+build_lib "matsya-daemon" "/build/MatsyaOS/daemon"
+build_lib "matsya-core" "/build/MatsyaOS/core"
+build_lib "matsya-kwin-plugins" "/build/MatsyaOS/kwin-plugins"
+build_lib "matsya-screenlocker" "/build/MatsyaOS/screenlocker"
+# Apps
+build_lib "matsya-launcher" "/build/MatsyaOS/launcher"
+build_lib "matsya-dock" "/build/MatsyaOS/dock"
+build_lib "matsya-statusbar" "/build/MatsyaOS/statusbar"
+build_lib "matsya-appmotor" "/build/MatsyaOS/appmotor"
+build_lib "matsya-calculator" "/build/MatsyaOS/calculator"
+build_lib "matsya-terminal" "/build/MatsyaOS/terminal"
+build_lib "matsya-texteditor" "/build/MatsyaOS/texteditor"
+build_lib "matsya-filemanager" "/build/MatsyaOS/filemanager"
+build_lib "matsya-screenshot" "/build/MatsyaOS/screenshot"
+build_lib "matsya-debinstaller" "/build/MatsyaOS/debinstaller"
+build_lib "matsya-settings" "/build/MatsyaOS/matsya-settings"
+build_lib "matsya-updater" "/build/MatsyaOS/matsya-updater"
+build_lib "matsya-qt-plugins" "/build/MatsyaOS/qt-plugins"
+build_lib "matsya-sddm-theme" "/build/MatsyaOS/sddm-theme"
+
+# Asset packages
+for asset in icons gtk-themes wallpappers; do
+    echo "==> Packaging matsya-$asset..."
+    local dst="/tmp/pkg-$asset/usr/share"
+    mkdir -p "$dst"
+    cp -r "/build/MatsyaOS/$asset"/* "$dst/" 2>/dev/null || true
+    cd "/tmp/pkg-$asset"
+    tar -czf "$REPO_DIR/matsya-$asset-1.0-1-x86_64.pkg.tar.zst" *
+    rm -rf "/tmp/pkg-$asset"
+done
+
+# Create repo database
+cd "$REPO_DIR"
+repo-add matsyaos.db.tar.gz *.pkg.tar.zst
+echo "=== All packages built! ==="
+' > /build/build-all.sh && chmod +x /build/build-all.sh
+
+CMD ["/build/build-all.sh"]
