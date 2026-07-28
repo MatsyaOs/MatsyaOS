@@ -54,30 +54,8 @@ jobs:
           echo "PATH=$PATH"
           which pacstrap || echo "pacstrap not in PATH"
 
-          # Override pacstrap - install packages using pacman --root directly (no mount needed)
-          install -m 755 /dev/stdin /usr/local/bin/pacstrap << 'PACSTRAP_SH'
-#!/bin/bash
-set -e
-echo "PACSTRAP_OVERRIDE: args=$*" >&2
-NEWROOT=""
-PACMAN_CONF=""
-PKGS=()
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    -C) PACMAN_CONF="$2"; shift 2 ;;
-    -c|-G|-M|-U) shift ;;
-    --) shift; NEWROOT="$1"; shift ;;
-    *) if [[ -z "$NEWROOT" ]]; then NEWROOT="$1"; else PKGS+=("$1"); fi; shift ;;
-  esac
-done
-if [[ -z "$NEWROOT" || -z "$PACMAN_CONF" ]]; then
-  echo "PACSTRAP_OVERRIDE ERROR: Usage" >&2
-  exit 1
-fi
-mkdir -p "$NEWROOT"/{dev,proc,sys,run,etc/pacman.d,var/{lib/pacman,cache/pacman/pkg,log}}
-cp "$PACMAN_CONF" "$NEWROOT/etc/pacman.conf"
-exec pacman --root="$NEWROOT" --config="$PACMAN_CONF" --cachedir=/var/cache/pacman/pkg --noconfirm -Sy "${PKGS[@]}"
-PACSTRAP_SH
+          # Copy pacstrap override (avoids mount calls that fail in Docker)
+          cp "${GITHUB_WORKSPACE}/MatsyaOS/.github/scripts/pacstrap-override" /usr/local/bin/pacstrap
           # Verify override is first in PATH
           hash -r
           echo "pacstrap location: $(type -p pacstrap)"
