@@ -4,9 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches: [master]
-    paths:
-      - 'matsya-iso/profiles/**'
-      - 'matsya-iso/archuseriso/**'
 
 jobs:
   build:
