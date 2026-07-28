@@ -53,33 +53,38 @@ jobs:
 
           sed -i "s|file:///home/mister/matsyaos-repo/x86_64/|file://${REPO_DIR}/|g" "${PROFILE_DIR}/pacman.conf"
 
-          # Override pacstrap to not use mount (fails in Docker containers)
-          cat > /usr/local/bin/pacstrap << 'PACSTRAP_OVERRIDE'
-          #!/usr/bin/env bash
-          # Override pacstrap - install packages using pacman --root directly
-          # Avoids mount calls that fail in Docker containers
-          set -e
-          NEWROOT=""
-          PACMAN_CONF=""
-          ARGS=()
-          PKGS=()
-          while [[ $# -gt 0 ]]; do
-            case "$1" in
-              -C) PACMAN_CONF="$2"; shift 2 ;;
-              -c|-G|-M|-U) shift ;;
-              --) shift; NEWROOT="$1"; shift ;;
-              *) if [[ -z "$NEWROOT" ]]; then NEWROOT="$1"; else PKGS+=("$1"); fi; shift ;;
-            esac
-          done
-          if [[ -z "$NEWROOT" || -z "$PACMAN_CONF" ]]; then
-            echo "Usage: pacstrap -C config newroot packages..."
-            exit 1
-          fi
-          mkdir -p "$NEWROOT"/{dev,proc,sys,run,etc/pacman.d,var/{lib/pacman,cache/pacman/pkg,log}}
-          cp "$PACMAN_CONF" "$NEWROOT/etc/pacman.conf"
-          pacman --root="$NEWROOT" --config="$PACMAN_CONF" --cachedir=/var/cache/pacman/pkg --noconfirm -Sy "${PKGS[@]}"
-          PACSTRAP_OVERRIDE
-          chmod +x /usr/local/bin/pacstrap
+          # Debug PATH and override
+          echo "PATH=$PATH"
+          which pacstrap || echo "pacstrap not in PATH"
+
+          # Override pacstrap - install packages using pacman --root directly (no mount needed)
+          cat > /tmp/pacstrap-override << 'EOF'
+#!/bin/bash
+set -e
+echo "PACSTRAP_OVERRIDE: args=$*" >&2
+NEWROOT=""
+PACMAN_CONF=""
+PKGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -C) PACMAN_CONF="$2"; shift 2 ;;
+    -c|-G|-M|-U) shift ;;
+    --) shift; NEWROOT="$1"; shift ;;
+    *) if [[ -z "$NEWROOT" ]]; then NEWROOT="$1"; else PKGS+=("$1"); fi; shift ;;
+  esac
+done
+if [[ -z "$NEWROOT" || -z "$PACMAN_CONF" ]]; then
+  echo "PACSTRAP_OVERRIDE ERROR: Usage" >&2
+  exit 1
+fi
+mkdir -p "$NEWROOT"/{dev,proc,sys,run,etc/pacman.d,var/{lib/pacman,cache/pacman/pkg,log}}
+cp "$PACMAN_CONF" "$NEWROOT/etc/pacman.conf"
+exec pacman --root="$NEWROOT" --config="$PACMAN_CONF" --cachedir=/var/cache/pacman/pkg --noconfirm -Sy "${PKGS[@]}"
+EOF
+          install -m 755 /tmp/pacstrap-override /usr/local/bin/pacstrap
+          # Verify override is first in PATH
+          hash -r
+          echo "pacstrap location: $(type -p pacstrap)"
 
           cd "${GITHUB_WORKSPACE}/MatsyaOS/matsya-iso"
           rm -rf work out
