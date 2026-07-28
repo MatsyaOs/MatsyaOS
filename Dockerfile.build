@@ -5,17 +5,27 @@ RUN pacman -Syu --noconfirm && \
     pacman -S --needed --noconfirm \
         base-devel git cmake extra-cmake-modules ninja pkgconf \
         qt6-base qt6-declarative qt6-tools qt6-svg qt6-sensors qt6-shadertools \
+        qt6-wayland qt6-location qt6-serialport qt6-speech qt6-webchannel \
+        qt6-webengine qt6-websockets qt6-webview qt6-xcb-private-headers \
         bluez-qt \
         kconfig kconfigwidgets kcoreaddons kguiaddons kwindowsystem kwayland \
         kdecoration kio kidletime kdeclarative kwin solid \
-        syntax-highlighting \
+        syntax-highlighting ktexteditor ktextwidgets \
         networkmanager-qt modemmanager-qt \
         kscreen qqc2-desktop-style taglib \
         polkit polkit-qt6 \
         libkscreen libqtxdg libdbusmenu-lxqt \
+        kstatusnotifieritem sonnet kdoctools kpackage kservice \
+        kpeople krunner kparts kitemviews kcmutils kcolorscheme \
+        kcompletion kcrash kdbusaddons kded kdesu kglobalaccel ki18n \
+        kimageformats kitemmodels kjobwidgets kpty kquickcharts \
+        kunitconversion kwallet kwidgetsaddons kxmlgui kauth kcodecs \
+        kirigami ksvg knotifications knotifyconfig kfilemetadata \
+        kiconthemes kbookmarks kcontacts kdav kholidays kmime \
         accountsservice \
         freetype2 fontconfig \
-        libxcursor libpulse libxcb libxtst \
+        libxcursor libpulse libxcb libxtst xcb-util xcb-util-wm \
+        xcb-util-keysyms xcb-util-image xcb-util-cursor \
         xorg-server-devel xf86-input-libinput xf86-input-synaptics \
         archiso arch-install-scripts \
         openssh rsync && \
@@ -46,7 +56,17 @@ build_lib() {
     cmake --build "$bdir" -j$(nproc)
     DESTDIR="/tmp/pkg-$name" cmake --install "$bdir"
     cd "/tmp/pkg-$name"
-    tar -czf "$REPO_DIR/$name-1.0-1-x86_64.pkg.tar.zst" *
+    # Create .PKGINFO
+    size=$(find . -type f -exec stat -c%s {} + | awk '{s+=$1} END {print s+0}')
+    cat > .PKGINFO << EOF
+pkgname = $name
+pkgver = 1.0-1
+pkgdesc = $name package from MatsyaOS
+arch = x86_64
+builddate = $(date +%s)
+size = $size
+EOF
+    tar --zstd -cf "$REPO_DIR/$name-1.0-1-x86_64.pkg.tar.zst" .
     rm -rf "$bdir" "/tmp/pkg-$name"
     echo "==> $name done"
 }
@@ -79,11 +99,20 @@ build_lib "matsya-sddm-theme" "/build/MatsyaOS/sddm-theme"
 # Asset packages
 for asset in icons gtk-themes wallpappers; do
     echo "==> Packaging matsya-$asset..."
-    local dst="/tmp/pkg-$asset/usr/share"
+    dst="/tmp/pkg-$asset/usr/share"
     mkdir -p "$dst"
     cp -r "/build/MatsyaOS/$asset"/* "$dst/" 2>/dev/null || true
     cd "/tmp/pkg-$asset"
-    tar -czf "$REPO_DIR/matsya-$asset-1.0-1-x86_64.pkg.tar.zst" *
+    size=$(find . -type f -exec stat -c%s {} + | awk '{s+=$1} END {print s+0}')
+    cat > .PKGINFO << EOF
+pkgname = matsya-$asset
+pkgver = 1.0-1
+pkgdesc = MatsyaOS $asset package
+arch = x86_64
+builddate = $(date +%s)
+size = $size
+EOF
+    tar --zstd -cf "$REPO_DIR/matsya-$asset-1.0-1-x86_64.pkg.tar.zst" .
     rm -rf "/tmp/pkg-$asset"
 done
 
