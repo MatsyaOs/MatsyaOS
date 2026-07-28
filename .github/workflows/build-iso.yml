@@ -25,7 +25,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: MatsyaOs/MatsyaOS
-          submodules: true
+          sparse-checkout: |
+            matsya-iso
+            .github
           path: MatsyaOS
 
       - name: Checkout matsyaos-repo
