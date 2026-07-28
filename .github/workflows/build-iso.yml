@@ -55,7 +55,7 @@ jobs:
           which pacstrap || echo "pacstrap not in PATH"
 
           # Override pacstrap - install packages using pacman --root directly (no mount needed)
-          cat > /tmp/pacstrap-override << 'EOF'
+          install -m 755 /dev/stdin /usr/local/bin/pacstrap << 'PACSTRAP_SH'
 #!/bin/bash
 set -e
 echo "PACSTRAP_OVERRIDE: args=$*" >&2
@@ -77,8 +77,7 @@ fi
 mkdir -p "$NEWROOT"/{dev,proc,sys,run,etc/pacman.d,var/{lib/pacman,cache/pacman/pkg,log}}
 cp "$PACMAN_CONF" "$NEWROOT/etc/pacman.conf"
 exec pacman --root="$NEWROOT" --config="$PACMAN_CONF" --cachedir=/var/cache/pacman/pkg --noconfirm -Sy "${PKGS[@]}"
-EOF
-          install -m 755 /tmp/pacstrap-override /usr/local/bin/pacstrap
+PACSTRAP_SH
           # Verify override is first in PATH
           hash -r
           echo "pacstrap location: $(type -p pacstrap)"

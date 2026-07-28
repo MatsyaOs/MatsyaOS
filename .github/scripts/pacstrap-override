@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+echo "PACSTRAP_OVERRIDE: args=$*" >&2
+NEWROOT=""
+PACMAN_CONF=""
+PKGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -C) PACMAN_CONF="$2"; shift 2 ;;
+    -c|-G|-M|-U) shift ;;
+    --) shift; NEWROOT="$1"; shift ;;
+    *) if [[ -z "$NEWROOT" ]]; then NEWROOT="$1"; else PKGS+=("$1"); fi; shift ;;
+  esac
+done
+if [[ -z "$NEWROOT" || -z "$PACMAN_CONF" ]]; then
+  echo "PACSTRAP_OVERRIDE ERROR: Usage" >&2
+  exit 1
+fi
+mkdir -p "$NEWROOT"/{dev,proc,sys,run,etc/pacman.d,var/{lib/pacman,cache/pacman/pkg,log}}
+cp "$PACMAN_CONF" "$NEWROOT/etc/pacman.conf"
+exec pacman --root="$NEWROOT" --config="$PACMAN_CONF" --cachedir=/var/cache/pacman/pkg --noconfirm -Sy "${PKGS[@]}"
