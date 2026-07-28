@@ -50,15 +50,13 @@ jobs:
 
           sed -i "s|file:///home/mister/matsyaos-repo/x86_64/|file://${REPO_DIR}/|g" "${PROFILE_DIR}/pacman.conf"
 
-          # Debug PATH and override
-          echo "PATH=$PATH"
-          which pacstrap || echo "pacstrap not in PATH"
-
-          # Copy pacstrap override (avoids mount calls that fail in Docker)
-          cp "${GITHUB_WORKSPACE}/MatsyaOS/.github/scripts/pacstrap-override" /usr/local/bin/pacstrap
-          # Verify override is first in PATH
-          hash -r
-          echo "pacstrap location: $(type -p pacstrap)"
+          # Install overrides (avoids mount calls that fail in Docker)
+          echo "Real pacstrap: $(command -v pacstrap)"
+          PACSTRAP_PATH="$(command -v pacstrap)"
+          cp "${GITHUB_WORKSPACE}/MatsyaOS/.github/scripts/pacstrap-override" "${PACSTRAP_PATH}"
+          ARCH_CHROOT_PATH="$(command -v arch-chroot)"
+          cp "${GITHUB_WORKSPACE}/MatsyaOS/.github/scripts/arch-chroot-override" "${ARCH_CHROOT_PATH}"
+          echo "Installed: pacstrap=${PACSTRAP_PATH} arch-chroot=${ARCH_CHROOT_PATH}"
 
           cd "${GITHUB_WORKSPACE}/MatsyaOS/matsya-iso"
           rm -rf work out

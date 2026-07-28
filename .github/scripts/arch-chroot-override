@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+echo "ARCH_CHROOT_OVERRIDE: args=$*" >&2
+CHROOT_DIR="$1"
+shift
+exec chroot "$CHROOT_DIR" "$@"
