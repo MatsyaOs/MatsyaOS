@@ -34,15 +34,37 @@ jobs:
           repository: MatsyaOs/matsyaos-repo
           path: matsyaos-repo
 
+      - name: Debug paths
+        run: |
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          echo "RUNNER_WORKSPACE=$RUNNER_WORKSPACE"
+          ls -la "${GITHUB_WORKSPACE}/"
+          echo "---"
+          ls -la "${GITHUB_WORKSPACE}/MatsyaOS/" 2>/dev/null || echo "No MatsyaOS dir"
+          echo "---"
+          ls -la "${GITHUB_WORKSPACE}/matsyaos-repo/" 2>/dev/null || echo "No matsyaos-repo dir"
+
       - name: Build ISO
         run: |
-          ISO_DIR="${GITHUB_WORKSPACE}/MatsyaOS"
-          PROFILE_DIR="${ISO_DIR}/matsya-iso/profiles/matsya"
-          REPO_DIR="$(dirname ${GITHUB_WORKSPACE})/matsyaos-repo/x86_64"
-          sed -i "s|file:///home/mister/matsyaos-repo/x86_64/|file://${REPO_DIR}/|g" "${PROFILE_DIR}/pacman.conf"
+          # Fix repo path
+          cd "${GITHUB_WORKSPACE}"
+          PROFILE_DIR="${GITHUB_WORKSPACE}/MatsyaOS/matsya-iso/profiles/matsya"
+          REPO_DIR="${GITHUB_WORKSPACE}/matsyaos-repo/x86_64"
+          echo "Profile: $PROFILE_DIR"
+          echo "Repo: $REPO_DIR"
 
-          cd "${ISO_DIR}/matsya-iso"
-          ./archuseriso/aui-mkiso "${PROFILE_DIR}" /tmp/iso-output
+          sed -i "s|file:///home/mister/matsyaos-repo/x86_64/|file://${REPO_DIR}/|g" "${PROFILE_DIR}/pacman.conf"
+          grep "matsya" "${PROFILE_DIR}/pacman.conf"
+
+          # First test pacstrap can work
+          cd "${GITHUB_WORKSPACE}/MatsyaOS/matsya-iso"
+          rm -rf work out
+          mkdir -p /tmp/test-pacstrap
+          pacstrap -C "${PROFILE_DIR}/pacman.conf" -c -G -M /tmp/test-pacstrap base 2>&1 || echo "PACSTRAP_FAILED"
+          rm -rf /tmp/test-pacstrap
+
+          # Try with verbose
+          ./archuseriso/aui-mkiso "${PROFILE_DIR}" /tmp/iso-output 2>&1
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
