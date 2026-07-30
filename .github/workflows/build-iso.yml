@@ -107,7 +107,9 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           TAG="v${VERSION}"
-          SHA=$(cat "${GITHUB_WORKSPACE}/iso-output"/*.sha512 | awk '{print $1}')
+          ISO_FILE=$(ls "${GITHUB_WORKSPACE}/iso-output"/*.iso | head -1)
+          ISO_NAME=$(basename "$ISO_FILE")
+          SHA=$(cat "${ISO_FILE}.sha512" | awk '{print $1}')
 
           cd "${GITHUB_WORKSPACE}/MatsyaOS"
           gh release create "$TAG" \
@@ -115,6 +117,8 @@ jobs:
             --title "MatsyaOS ${VERSION}" \
             --notes "MatsyaOS ISO build ${VERSION}
 
-          SHA512: \`${SHA}\`" \
-            "${GITHUB_WORKSPACE}/iso-output"/*.iso \
+          SHA512: \`${SHA}\`
+
+          > **Note:** The ISO file (${ISO_NAME}) exceeds GitHub's 2 GB release asset limit.
+          > Download it from the **MatsyaOS-ISO-${VERSION}** artifact in the [GitHub Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})." \
             "${GITHUB_WORKSPACE}/iso-output"/*.sha512
