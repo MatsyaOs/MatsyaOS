@@ -17,6 +17,8 @@ concurrency:
 
 jobs:
   build-iso:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
