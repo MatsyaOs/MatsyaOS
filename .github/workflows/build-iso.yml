@@ -28,11 +28,11 @@ jobs:
           pacman -Syu --noconfirm
           pacman -S --needed --noconfirm \
             archiso arch-install-scripts squashfs-tools libisoburn mtools syslinux grub \
-            git wget && \
+            git wget github-cli && \
           pacman -Scc --noconfirm
 
       - name: Checkout MatsyaOS
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: MatsyaOs/MatsyaOS
           ref: master
@@ -77,16 +77,47 @@ jobs:
           echo "=== ISO BUILD COMPLETE ==="
           ls -lh "${GITHUB_WORKSPACE}/iso-output"/
 
+      - name: Generate SHA512 checksum
+        run: |
+          cd "${GITHUB_WORKSPACE}/iso-output"
+          for f in *.iso; do
+            sha512sum "$f" > "$f.sha512"
+          done
+          cat *.sha512
+
       - name: Upload ISO
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: MatsyaOS-ISO-${{ steps.version.outputs.version }}
           path: ${{ github.workspace }}/iso-output/*.iso
           if-no-files-found: error
 
       - name: Upload ISO checksum
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: MatsyaOS-ISO-${{ steps.version.outputs.version }}-sha512
           path: ${{ github.workspace }}/iso-output/*.sha512
           if-no-files-found: warn
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="v${VERSION}"
+          NOTES="MatsyaOS ISO build ${VERSION}
+
+          Automatically built ISO for MatsyaOS.
+
+          ### Checksums"
+          for f in "${GITHUB_WORKSPACE}/iso-output"/*.sha512; do
+            NOTES="${NOTES}
+          - $(cat "$f")"
+          done
+
+          cd "${GITHUB_WORKSPACE}/iso-output"
+          gh release create "$TAG" \
+            --title "MatsyaOS ${VERSION}" \
+            --notes "$NOTES" \
+            --generate-notes \
+            *.iso *.sha512
