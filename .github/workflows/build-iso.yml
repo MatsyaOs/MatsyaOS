@@ -2,73 +2,87 @@ name: Build MatsyaOS ISO
 
 on:
   workflow_dispatch:
+    inputs:
+      iso_version:
+        description: 'ISO version tag (e.g., 1.0, 2.0)'
+        required: false
+        default: '1.0'
+        type: string
   push:
     branches: [master]
 
+concurrency:
+  group: matsya-iso-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  build-iso:
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
       options: --privileged --security-opt seccomp=unconfined --security-opt apparmor=unconfined
 
     steps:
-      - name: Install dependencies
+      - name: Install ISO build dependencies
         run: |
           pacman -Syu --noconfirm
-          pacman -S --noconfirm archiso arch-install-scripts grub git wget squashfs-tools libisoburn mtools syslinux
+          pacman -S --needed --noconfirm \
+            archiso arch-install-scripts squashfs-tools libisoburn mtools syslinux grub \
+            git wget && \
+          pacman -Scc --noconfirm
 
       - name: Checkout MatsyaOS
         uses: actions/checkout@v4
         with:
           repository: MatsyaOs/MatsyaOS
-          fetch-depth: 1
+          ref: master
+          fetch-depth: 0
           path: MatsyaOS
 
-      - name: Checkout matsyaos-repo
-        uses: actions/checkout@v4
-        with:
-          repository: MatsyaOs/matsyaos-repo
-          path: matsyaos-repo
-
-      - name: Debug paths
+      - name: Checkout submodules
         run: |
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
-          echo "RUNNER_WORKSPACE=$RUNNER_WORKSPACE"
-          ls -la "${GITHUB_WORKSPACE}/"
-          echo "---"
-          ls -la "${GITHUB_WORKSPACE}/MatsyaOS/" 2>/dev/null || echo "No MatsyaOS dir"
-          echo "---"
-          ls -la "${GITHUB_WORKSPACE}/matsyaos-repo/" 2>/dev/null || echo "No matsyaos-repo dir"
+          cd "${GITHUB_WORKSPACE}/MatsyaOS"
+          git submodule update --init --depth 1
+
+      - name: Strip local file:// repos from pacman.conf
+        run: |
+          CONF="${GITHUB_WORKSPACE}/MatsyaOS/matsya-iso/profiles/matsya/pacman.conf"
+          sed -i '/^Server\s*=\s*file:\/\//d' "$CONF"
+          echo "=== Sanitized pacman.conf ==="
+          grep -n '^\s*Server\s*=' "$CONF" || echo "WARNING: No Server entries!"
+
+      - name: Set ISO version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "version=${{ inputs.iso_version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build ISO
         run: |
-          # Fix repo path
-          cd "${GITHUB_WORKSPACE}"
-          PROFILE_DIR="${GITHUB_WORKSPACE}/MatsyaOS/matsya-iso/profiles/matsya"
-          REPO_DIR="${GITHUB_WORKSPACE}/matsyaos-repo/x86_64"
+          set -e
+          mkdir -p /tmp/iso-work "${GITHUB_WORKSPACE}/iso-output"
+          rm -rf /tmp/iso-work/*
 
-          sed -i "s|file:///home/mister/matsyaos-repo/x86_64/|file://${REPO_DIR}/|g" "${PROFILE_DIR}/pacman.conf"
+          mkarchiso -v -w /tmp/iso-work \
+            -o "${GITHUB_WORKSPACE}/iso-output" \
+            "${GITHUB_WORKSPACE}/MatsyaOS/matsya-iso/profiles/matsya"
 
-          cd "${GITHUB_WORKSPACE}/MatsyaOS/matsya-iso"
-          rm -rf work out
-
-          # Test the generated pacman.conf and pacman --root directly
-          mkdir -p /tmp/test-pacroot/{dev,proc,sys,run,etc/pacman.d,var/{lib/pacman,cache/pacman/pkg,log}}
-          cp "${PROFILE_DIR}/pacman.conf" /tmp/test-pacroot/etc/pacman.conf
-          if pacman --root=/tmp/test-pacroot --config="${PROFILE_DIR}/pacman.conf" --cachedir=/var/cache/pacman/pkg --noconfirm -Sy base 2>&1; then
-            echo "PACMAN_ROOT_TEST: success"
-          else
-            echo "PACMAN_ROOT_TEST: failed (exit $?)"
-          fi
-          rm -rf /tmp/test-pacroot
-
-          # Now build the ISO
-          ./archuseriso/aui-mkiso "${PROFILE_DIR}" /tmp/iso-output 2>&1
+          echo "=== ISO BUILD COMPLETE ==="
+          ls -lh "${GITHUB_WORKSPACE}/iso-output"/
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
         with:
-          name: MatsyaOS-ISO
-          path: /tmp/iso-output/*.iso
+          name: MatsyaOS-ISO-${{ steps.version.outputs.version }}
+          path: ${{ github.workspace }}/iso-output/*.iso
           if-no-files-found: error
+
+      - name: Upload ISO checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: MatsyaOS-ISO-${{ steps.version.outputs.version }}-sha512
+          path: ${{ github.workspace }}/iso-output/*.sha512
+          if-no-files-found: warn

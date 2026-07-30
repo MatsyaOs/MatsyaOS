@@ -1,20 +1,17 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2034
 
-iso_name="aui-matsya"
-iso_label="MATSYAOS1.0"
+iso_name="matsyaos"
+iso_label="MATSYAOS"
 iso_publisher="Misternegative21@gmail.com"
-desktop="Matsya"
-iso_application="Archuseriso ${desktop} Live/Rescue medium"
-iso_version=""
+iso_application="MatsyaOS Live/Rescue medium"
+iso_version="$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y%m%d)"
 install_dir="arch"
 buildmodes=('iso')
-bootmodes=('bios.syslinux.mbr' 'bios.syslinux.eltorito'
-           'uefi-ia32.grub.esp' 'uefi-x64.systemd-boot.esp'
-           'uefi-ia32.grub.eltorito' 'uefi-x64.systemd-boot.eltorito')
+bootmodes=('bios.syslinux'
+           'uefi.systemd-boot')
 arch="x86_64"
 pacman_conf="pacman.conf"
-pacman_testing_conf="pacman-testing.conf"
 airootfs_image_type="squashfs"
 airootfs_image_tool_options=('-comp' 'zstd')
 file_permissions=(

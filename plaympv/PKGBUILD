@@ -1,13 +1,12 @@
 # Maintainer: ABHISHEK SHARMA
-pkgname=mplaympv
-github="plaympv"
-pkgname=$plaympv
+_pkgname=plaympv
+pkgname=plaympv
 pkgver=0.8
 pkgrel=1
-pkgdesc='Qt5/QML based player for MatsyaOS.'
-url="https://github.com/matsyaos/${github}"
-conflicts=("${pkgname}")
-provides=("${pkgname}")
+pkgdesc='Qt6/QML based player for MatsyaOS.'
+url="https://github.com/MatsyaOs/plaympv"
+conflicts=("mplaympv")
+provides=("mplaympv")
 arch=('i686' 'x86_64')
 license=('GPL2')
 makedepends=('git')

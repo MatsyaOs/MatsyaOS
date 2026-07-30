@@ -9,7 +9,7 @@ import QtQuick 2.12
 import QtQml.Models 2.12
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtGraphicalEffects
+import Qt5Compat.GraphicalEffects
 import MatsyaUI 1.0 as MatsyaUI
 import QtWebEngine 1.0
 import QtQuick.Window 2.3

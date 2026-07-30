@@ -3,7 +3,7 @@ import QtQuick.Layouts 1.0
 import QtQuick.Controls
 import QtQuick.Controls.Private 1.0
 import QtQuick.Controls
-import QtGraphicalEffects
+import Qt5Compat.GraphicalEffects
 
 import mpvz 1.0
 

@@ -16,30 +16,28 @@ sed -i '/^hosts:/ {
         s/\(resolve\)/mdns_minimal \[NOTFOUND=return\] \1/
         s/\(dns\)$/\1 wins/ }' /etc/nsswitch.conf
 
-# Nvidia driver setup
-# either nvidia setup
-# either optimus setup (default settings should work)
-# either no setup
-if grep -q 'nvidia' /version; then
-    # Nvidia settings
+# Nvidia/Optimus display setup
+if [ -f /etc/lightdm/lightdm.conf ] && grep -q 'nvidia' /version 2>/dev/null; then
     sed -i 's|^#\(display-setup-script=\)$|\1/etc/lightdm/display_setup.sh|' /etc/lightdm/lightdm.conf
-elif grep -q 'optimus' /version; then
-    # Optimus settings
-    rm /etc/lightdm/display_setup.sh
+elif grep -q 'optimus' /version 2>/dev/null; then
+    rm -f /etc/lightdm/display_setup.sh
 else
-    # No settings
-    rm /etc/lightdm/display_setup.sh /etc/modprobe.d/nvidia-drm.conf
+    rm -f /etc/lightdm/display_setup.sh /etc/modprobe.d/nvidia-drm.conf
 fi
 
 # Lightdm display-manager
 # * live user autologin
-# * Adwaita theme
+# * Matsya theme
 # * background color
-sed -i 's/^#\(autologin-user=\)$/\1live/
-        s/^#\(autologin-session=\)$/\1deepin/' /etc/lightdm/lightdm.conf
-sed -i 's/^#\(background=\)$/\1#232627/
-        s/^#\(theme-name=\)$/\1Deepin/
-        s/^#\(icon-theme-name=\)$/\1Deepin/' /etc/lightdm/lightdm-gtk-greeter.conf
+if [ -f /etc/lightdm/lightdm.conf ]; then
+    sed -i 's/^#\(autologin-user=\)$/\1live/
+            s/^#\(autologin-session=\)$/\1matsya-xsession/' /etc/lightdm/lightdm.conf
+fi
+if [ -f /etc/lightdm/lightdm-gtk-greeter.conf ]; then
+    sed -i 's/^#\(background=\)$/\1#1a1a2e/
+            s/^#\(theme-name-\)$/\1Matsya/
+            s/^#\(icon-theme-name=\)$/\1Matsya/' /etc/lightdm/lightdm-gtk-greeter.conf
+fi
 
 # Enable service when available
 { [[ -e /usr/lib/systemd/system/acpid.service                ]] && systemctl enable acpid.service;
@@ -53,8 +51,21 @@ sed -i 's/^#\(background=\)$/\1#232627/
   [[ -e /usr/lib/systemd/system/winbind.service              ]] && systemctl enable winbind.service;
 } > /dev/null 2>&1
 
-# Set lightdm display-manager
-ln -s /usr/lib/systemd/system/lightdm.service /etc/systemd/system/display-manager.service
+# Set display-manager (sddm or lightdm)
+if [ -f /usr/lib/systemd/system/sddm.service ]; then
+    systemctl enable sddm.service
+    mkdir -p /etc/sddm.conf.d
+    cat > /etc/sddm.conf.d/autologin.conf << 'EOF'
+[Autologin]
+User=live
+Session=matsya-xsession
+
+[Theme]
+Current=matsya
+EOF
+elif [ -f /usr/lib/systemd/system/lightdm.service ]; then
+    ln -s /usr/lib/systemd/system/lightdm.service /etc/systemd/system/display-manager.service || true
+fi
 
 # Add live user
 # * groups member
@@ -69,22 +80,12 @@ sed -i 's/^#\s\(%wheel\s.*NOPASSWD\)/\1/' /etc/sudoers
 groupadd -r autologin
 gpasswd -a live autologin
 
-# Deepin lightdm greeter broken
-# Commenting out configuration file
-if [[ -e /usr/share/lightdm/lightdm.conf.d/60-deepin.conf ]]; then
-    sed -i 's/^/#/' /usr/share/lightdm/lightdm.conf.d/60-deepin.conf
-fi
-
-# Deepin disable dde-dock's plugin overlay warning
-if [[ -e /usr/lib/dde-dock/plugins/liboverlay-warning.so ]]; then
-    mv /usr/lib/dde-dock/plugins/liboverlay-warning.so{,-disabled_by_archuseriso}
-fi
-
 # Update schemas
 glib-compile-schemas /usr/share/glib-2.0/schemas/
 
 # Default background fix
-ln -s /usr/share/backgrounds/deepin/desktop.jpg /usr/share/backgrounds/default_background.jpg
+mkdir -p /usr/share/backgrounds
+ln -sf /usr/share/sources/1.png /usr/share/backgrounds/default_background.jpg || true
 
 # disable systemd-networkd.service
 # we have NetworkManager for managing network interfaces
