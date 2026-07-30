@@ -52,7 +52,6 @@ jobs:
         run: |
           CONF="${GITHUB_WORKSPACE}/MatsyaOS/matsya-iso/profiles/matsya/pacman.conf"
           sed -i '/^Server\s*=\s*file:\/\//d' "$CONF"
-          sed -i '/^Server\s*=\s*https:\/\/media\.githubusercontent\.com\//d' "$CONF"
           echo "=== Sanitized pacman.conf ==="
           grep -n '^\s*Server\s*=' "$CONF" || echo "WARNING: No Server entries!"
 
