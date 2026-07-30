@@ -105,19 +105,14 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           TAG="v${VERSION}"
-          NOTES="MatsyaOS ISO build ${VERSION}
+          SHA=$(cat "${GITHUB_WORKSPACE}/iso-output"/*.sha512 | awk '{print $1}')
 
-          Automatically built ISO for MatsyaOS.
-
-          ### Checksums"
-          for f in "${GITHUB_WORKSPACE}/iso-output"/*.sha512; do
-            NOTES="${NOTES}
-          - $(cat "$f")"
-          done
-
-          cd "${GITHUB_WORKSPACE}/iso-output"
+          cd "${GITHUB_WORKSPACE}/MatsyaOS"
           gh release create "$TAG" \
+            --repo MatsyaOs/MatsyaOS \
             --title "MatsyaOS ${VERSION}" \
-            --notes "$NOTES" \
-            --generate-notes \
-            *.iso *.sha512
+            --notes "MatsyaOS ISO build ${VERSION}
+
+          SHA512: \`${SHA}\`" \
+            "${GITHUB_WORKSPACE}/iso-output"/*.iso \
+            "${GITHUB_WORKSPACE}/iso-output"/*.sha512
