@@ -41,9 +41,11 @@ jobs:
           path: MatsyaOS
 
       - name: Checkout submodules
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd "${GITHUB_WORKSPACE}/MatsyaOS"
-          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
           git submodule update --init --depth 1
 
       - name: Strip local file:// repos from pacman.conf
